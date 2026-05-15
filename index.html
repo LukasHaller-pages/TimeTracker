@@ -208,6 +208,16 @@
                 font-size: 1.8rem;
             }
         }
+        
+        .state-badge {
+            display: inline-block;
+            background: #10b98120;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            margin-top: 6px;
+            color: #86efac;
+        }
     </style>
 </head>
 <body>
@@ -237,6 +247,7 @@
         ⏵ START
     </button>
     <p id="status">⚫ Nicht aktiv</p>
+    <div id="lastActionInfo" class="state-badge">⏳ Lade letzte Aktion...</div>
     <div class="git-note">
         ✅ Jede Start/Stop Aktion wird in GitLab (times.csv) gespeichert.<br>
         📅 Zeitformat: DD.MM.YYYY HH:MM:SS (europäisch)<br>
@@ -248,7 +259,7 @@
 <script>
     // ======================= GLOBALE VARIABLEN =======================
     let currentUser = null;
-    let isRunning = false;
+    let isRunning = false;          // UI-state: ob aus Sicht der App der Timer läuft
     let usersList = [];
     
     // DOM elements
@@ -259,8 +270,9 @@
     const newUserNameInput = document.getElementById('newUserName');
     const userErrorMsg = document.getElementById('userErrorMsg');
     const refreshBtn = document.getElementById('refreshUsersBtn');
+    const lastActionInfo = document.getElementById('lastActionInfo');
     
-    // Europäisches Zeitformat
+    // ----- Hilfsfunktionen für Zeitstempel -----
     function getEuropeanTimestamp() {
         const now = new Date();
         const day = String(now.getDate()).padStart(2, '0');
@@ -276,7 +288,7 @@
         return new Date().toISOString();
     }
     
-    // GitLab API Helper
+    // ----- GitLab API Hilfsfunktionen (basierend auf config.js) -----
     const PROJECT_ID_ENC = encodeURIComponent(CONFIG.PROJECT_ID);
     const USERS_CSV_PATH = "users.csv";
     const BASE_URL = `${CONFIG.GITLAB_URL}/api/v4/projects/${PROJECT_ID_ENC}/repository/files`;
@@ -326,12 +338,11 @@
         }
     }
     
-    // KEINE Default-User mehr! Nur aus CSV laden oder leere Liste
+    // ------ USER MANAGEMENT ------
     async function loadUsersFromGitLab() {
         try {
             const rawContent = await fetchGitLabFileContent(USERS_CSV_PATH);
             if (!rawContent || rawContent.trim() === "") {
-                console.log("users.csv ist leer oder existiert nicht -> leere Benutzerliste");
                 return [];
             }
             const lines = rawContent.split(/\r?\n/).filter(l => l.trim().length > 0);
@@ -379,12 +390,24 @@
                     isRunning = false;
                     updateUI();
                 }
+                lastActionInfo.innerText = "⏳ Kein Benutzer ausgewählt";
             }
             if (currentUser && usersList.includes(currentUser)) {
                 currentUserSpan.innerText = `👤 ${currentUser}`;
                 if (userSelect.value !== currentUser) userSelect.value = currentUser;
+                // Nachdem Benutzer geladen: prüfe letzten Status (start/stop) aus times.csv
+                await syncTimerStateFromLastEntry(currentUser);
+            } else if (!currentUser && userSelect.value) {
+                // falls aktueller User nicht gesetzt aber select wert hat
+                const selected = userSelect.value;
+                if (selected && usersList.includes(selected)) {
+                    currentUser = selected;
+                    currentUserSpan.innerText = `👤 ${currentUser}`;
+                    await syncTimerStateFromLastEntry(currentUser);
+                }
             } else {
                 currentUserSpan.innerText = "👤 Kein User gewählt";
+                lastActionInfo.innerText = "👤 Bitte Benutzer wählen";
             }
             userErrorMsg.innerText = "";
         } catch (err) {
@@ -393,6 +416,104 @@
         }
     }
     
+    // ----- KERNLOGIK: letzte Aktion des Users aus times.csv auslesen -----
+    // Prüft, ob der letzte Eintrag des aktuellen Users "start" oder "stop" war.
+    // Dementsprechend wird isRunning gesetzt, um doppelte Starts/Stops zu vermeiden.
+    // Diese Funktion stellt sicher, dass nach Seiten-Reload der korrekte Timer-Zustand wiederhergestellt wird.
+    async function fetchLastUserActionFromCSV(user) {
+        if (!user) return null;
+        const filePath = CONFIG.FILE_PATH;
+        const fileEnc = encodeURIComponent(filePath);
+        const rawUrl = `${BASE_URL}/${fileEnc}/raw?ref=${CONFIG.BRANCH}`;
+        try {
+            const resp = await fetch(rawUrl, {
+                headers: { "PRIVATE-TOKEN": CONFIG.GITLAB_TOKEN }
+            });
+            if (!resp.ok) {
+                if (resp.status === 404) return null; // Datei existiert noch nicht -> keine Aktion
+                throw new Error(`HTTP ${resp.status}`);
+            }
+            const content = await resp.text();
+            if (!content.trim()) return null;
+            
+            // CSV Zeilen parsen: Format: user,action,timestamp_eu,iso
+            const lines = content.split(/\r?\n/).filter(l => l.trim().length > 0);
+            // Rückwärts durchlaufen, um letzten Eintrag des spezifischen Users zu finden
+            for (let i = lines.length - 1; i >= 0; i--) {
+                const parts = lines[i].split(',');
+                if (parts.length >= 2) {
+                    const csvUser = parts[0].trim();
+                    const action = parts[1].trim().toLowerCase();
+                    if (csvUser === user && (action === 'start' || action === 'stop')) {
+                        return action; // 'start' oder 'stop'
+                    }
+                }
+            }
+            return null;
+        } catch (err) {
+            console.warn("Fehler beim Lesen der times.csv für Zustandssynchronisation:", err);
+            return null;
+        }
+    }
+    
+    // Synchronisiert den lokalen isRunning-State mit der letzten bekannten Aktion des Users
+    async function syncTimerStateFromLastEntry(user) {
+        if (!user) {
+            // falls kein user, setze isRunning = false, UI default
+            isRunning = false;
+            updateUI();
+            lastActionInfo.innerText = "⏳ Kein Benutzer";
+            return;
+        }
+        
+        try {
+            const lastAction = await fetchLastUserActionFromCSV(user);
+            if (lastAction === 'start') {
+                // Der letzte Eintrag war ein Start -> Timer sollte als laufend markiert sein
+                if (!isRunning) {
+                    isRunning = true;
+                    updateUI();
+                    lastActionInfo.innerHTML = `⏵ Letzte Aktion: <strong>START</strong> (Timer läuft)`;
+                    statusP.innerText = "🔴 Timer läuft (aktiv)";
+                } else {
+                    lastActionInfo.innerHTML = `⏵ Zustand: Timer läuft (letzte Aktion: START)`;
+                }
+            } 
+            else if (lastAction === 'stop') {
+                // Letzter Eintrag war Stop -> Timer sollte gestoppt sein
+                if (isRunning) {
+                    isRunning = false;
+                    updateUI();
+                    lastActionInfo.innerHTML = `⏹ Letzte Aktion: <strong>STOP</strong> (Timer inaktiv)`;
+                    statusP.innerText = "⚫ Nicht aktiv";
+                } else {
+                    lastActionInfo.innerHTML = `⏹ Zustand: Timer gestoppt (letzte Aktion: STOP)`;
+                }
+            }
+            else {
+                // Kein Eintrag -> Timer ist gestoppt, setze isRunning false
+                if (isRunning) {
+                    isRunning = false;
+                    updateUI();
+                }
+                lastActionInfo.innerHTML = `📭 Keine vorherige Aktion – Timer ist gestoppt`;
+                statusP.innerText = "⚫ Nicht aktiv";
+            }
+            
+            // Zusätzliche Absicherung: Zeige Info, dass Zustand konsistent ist
+            if (lastAction === null) {
+                lastActionInfo.innerHTML = `🕒 Kein vorheriger Eintrag – du kannst STARTEN`;
+            }
+        } catch (err) {
+            console.error("Fehler bei Sync:", err);
+            lastActionInfo.innerText = "⚠️ Konnte letzten Status nicht prüfen";
+            // Sicherheitshalber setzen wir isRunning = false, um inkonsistente Zustände zu vermeiden
+            isRunning = false;
+            updateUI();
+        }
+    }
+    
+    // Neue Benutzer anlegen
     async function createNewUser(username) {
         if (!username || username.trim() === "") {
             userErrorMsg.innerText = "❌ Bitte gültigen Namen eingeben";
@@ -410,7 +531,7 @@
             usersList = newList;
             populateUserSelect(usersList);
             userSelect.value = cleanName;
-            selectUserByName(cleanName);
+            await selectUserByName(cleanName);
             userErrorMsg.innerText = `✅ Benutzer "${cleanName}" angelegt.`;
             return true;
         } catch (err) {
@@ -419,44 +540,83 @@
         }
     }
     
-    function selectUserByName(user) {
+    async function selectUserByName(user) {
         if (!user) return;
         currentUser = user;
         currentUserSpan.innerText = `👤 ${currentUser}`;
         userSelect.value = currentUser;
         userErrorMsg.innerText = "";
+        // WICHTIG: Jedes Mal wenn ein Benutzer gewählt wird, synchronisiere den Timer-Zustand aus der CSV
+        await syncTimerStateFromLastEntry(currentUser);
     }
     
+    // ----- Timer Toggle mit Prüfung gegen doppelte Starts/Stops (auch nach Reload) -----
     async function toggleTimer() {
         if (!currentUser) {
             userErrorMsg.innerText = "⚠️ Bitte zuerst einen Benutzer auswählen.";
             return;
         }
         userErrorMsg.innerText = "";
-        const willBeRunning = !isRunning;
-        const action = willBeRunning ? "start" : "stop";
         
-        isRunning = willBeRunning;
+        // Vor dem Umschalten: Lade die letzte Aktion erneut aus der CSV (um Race Conditions zu vermeiden)
+        // Das ist entscheidend: prüfe direkt vor dem Speichern, ob der User bereits einen "start" oder "stop" ohne passendes Gegenstück hat.
+        const lastAction = await fetchLastUserActionFromCSV(currentUser);
+        
+        // Verhindere doppelten Start: wenn letzte Aktion = "start" und der Benutzer versucht zu starten (isRunning false / willStart true)
+        const willStart = !isRunning;
+        
+        if (willStart && lastAction === 'start') {
+            // Fall: Der letzte Eintrag war bereits ein Start ohne Stop -> Timer läuft eigentlich bereits im System
+            // Das deutet darauf hin, dass der lokale Zustand nicht korrekt war. Synchronisiere und weise den Benutzer hin.
+            userErrorMsg.innerText = "⛔ Fehler: Letzte Aktion war bereits START. Kein doppelter Start erlaubt. Zustand wurde synchronisiert.";
+            await syncTimerStateFromLastEntry(currentUser);
+            return;
+        }
+        
+        if (!willStart && lastAction === 'stop') {
+            // Doppelter Stop: verhindern
+            userErrorMsg.innerText = "⛔ Fehler: Letzte Aktion war bereits STOP. Timer ist bereits gestoppt. Kein doppelter Stop erlaubt.";
+            await syncTimerStateFromLastEntry(currentUser);
+            return;
+        }
+        
+        // Auch wenn isRunning gerade anders ist aber durch sync konsistent, verwende den erwarteten Zustand
+        // Jetzt sichere Aktion: Start wenn letzte Aktion nicht start ist, Stop wenn letzte Aktion nicht stop ist.
+        const action = willStart ? "start" : "stop";
+        
+        // Optimistisch UI updaten (oder auch nicht, aber wir machen nach erfolgreichem API-Call commit)
+        const previousRunning = isRunning;
+        // Temporär UI umschalten für Feedback, wird bei Fehler zurückgesetzt
+        isRunning = willStart;
         updateUI();
         
         try {
             await saveTimeEntryToCSV(currentUser, action);
+            // Erfolgreich gespeichert: lokaler Zustand bleibt wie gesetzt, zusätzlich letzte Aktion Info aktualisieren
             if (action === "start") {
                 statusP.innerText = "⏵ Timer läuft · gestartet";
+                lastActionInfo.innerHTML = `✅ START erfasst · Timer läuft`;
             } else {
                 statusP.innerText = "⏹ Gestoppt · gespeichert";
+                lastActionInfo.innerHTML = `✅ STOP erfasst · Timer inaktiv`;
                 setTimeout(() => {
                     if (!isRunning) statusP.innerText = "⚫ Nicht aktiv";
                 }, 2000);
             }
+            // Nach erfolgreichem Schreiben nochmal kurz die letzten Infos frisch halten (optional)
+            // Keine weitere Aktion nötig
         } catch (err) {
-            isRunning = !willBeRunning;
+            // Bei Fehler: Zustand zurücksetzen
+            isRunning = previousRunning;
             updateUI();
             userErrorMsg.innerText = `❌ GitLab Fehler: ${err.message || "Netzwerk"}`;
             console.error(err);
+            // Erneut letzte Aktion laden um korrekten Stand anzuzeigen
+            await syncTimerStateFromLastEntry(currentUser);
         }
     }
     
+    // Speichern in times.csv (wie gehabt, aber wir nutzen die existierende Logik)
     async function saveTimeEntryToCSV(user, action) {
         const europeanTime = getEuropeanTimestamp();
         const isoTime = getISOForStorage();
@@ -479,9 +639,17 @@
             console.warn("lesen der times.csv nicht möglich, erstelle neue", err);
         }
         
-        let updatedContent = currentContent.trim() === "" ? newLine : currentContent + "\n" + newLine;
-        if (currentContent.endsWith("\n")) updatedContent = currentContent + newLine;
-        else if (currentContent.length && !currentContent.endsWith("\n")) updatedContent = currentContent + "\n" + newLine;
+        let updatedContent = "";
+        if (!currentContent.trim()) {
+            updatedContent = newLine;
+        } else {
+            // ensure newline separation
+            if (currentContent.endsWith("\n")) {
+                updatedContent = currentContent + newLine;
+            } else {
+                updatedContent = currentContent + "\n" + newLine;
+            }
+        }
         
         const putUrl = `${BASE_URL}/${fileEnc}`;
         const putResp = await fetch(putUrl, {
@@ -507,14 +675,15 @@
         if (isRunning) {
             toggleBtn.innerHTML = "⏹ STOP";
             toggleBtn.style.background = "#ef4444";
-            statusP.innerHTML = "🔴 Timer läuft (aktiv)";
+            if (statusP.innerText !== "🔴 Timer läuft (aktiv)") statusP.innerHTML = "🔴 Timer läuft (aktiv)";
         } else {
             toggleBtn.innerHTML = "⏵ START";
             toggleBtn.style.background = "#10b981";
-            statusP.innerHTML = "⚫ Nicht aktiv";
+            if (statusP.innerText !== "⚫ Nicht aktiv") statusP.innerHTML = "⚫ Nicht aktiv";
         }
     }
     
+    // ----- INIT & EVENT LISTENER -----
     async function init() {
         if (!CONFIG.GITLAB_URL) {
             userErrorMsg.innerText = "⚠️ config.js muss GITLAB_URL enthalten!";
@@ -527,14 +696,17 @@
             await refreshUserList();
         }
         
-        userSelect.addEventListener('change', (e) => {
+        userSelect.addEventListener('change', async (e) => {
             const selected = e.target.value;
             if (selected) {
-                selectUserByName(selected);
+                await selectUserByName(selected);
             } else {
                 currentUser = null;
                 currentUserSpan.innerText = "👤 Kein User gewählt";
                 userErrorMsg.innerText = "";
+                isRunning = false;
+                updateUI();
+                lastActionInfo.innerText = "👤 Kein Benutzer ausgewählt";
             }
         });
         
@@ -550,8 +722,8 @@
         
         refreshBtn.addEventListener('click', async () => {
             await refreshUserList();
-            userErrorMsg.innerText = "✅ Benutzerliste aktualisiert";
-            setTimeout(() => { if(userErrorMsg.innerText === "✅ Benutzerliste aktualisiert") userErrorMsg.innerText = ""; }, 2000);
+            userErrorMsg.innerText = "✅ Benutzerliste & Timer-Zustand aktualisiert";
+            setTimeout(() => { if(userErrorMsg.innerText === "✅ Benutzerliste & Timer-Zustand aktualisiert") userErrorMsg.innerText = ""; }, 2500);
         });
         
         toggleBtn.addEventListener('click', toggleTimer);
