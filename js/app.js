@@ -673,7 +673,7 @@ viewProgressBtn.addEventListener('click', () => {
         } catch (e) {
             console.warn('Could not save user before navigation:', e);
         }
-        window.location.href = '/calendar/calendar.html?user=' + encodeURIComponent(currentUser);
+        window.location.href = 'calendar/calendar.html?user=' + encodeURIComponent(currentUser);
     }
 });
 
@@ -693,7 +693,7 @@ viewSupervisorProgressBtn.addEventListener('click', () => {
         } catch (e) {
             console.warn('Could not save user before navigation:', e);
         }
-        window.location.href = '/calendar/calendar.html?user=' + encodeURIComponent(selectedUserId) + '&supervisor=true';
+        window.location.href = 'calendar/calendar.html?user=' + encodeURIComponent(selectedUserId) + '&supervisor=true';
     } else {
         showMessage('selectDeveloperFirst', 'warning');
     }
