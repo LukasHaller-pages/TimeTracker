@@ -1,10 +1,35 @@
-name: My Test Workflow
+name: Sync GitLab Group Issues
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
 
 jobs:
-  test:
+  sync:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
     steps:
-      - run: echo "HELLO FROM GITHUB ACTIONS"
+      - uses: actions/checkout@v4
+
+      - name: Fetch GitLab Issues
+        run: |
+          curl --fail --silent --show-error \
+          --header "PRIVATE-TOKEN: ${{ secrets.GITLAB_TOKEN }}" \
+          "https://git.htl-klu.at/api/v4/groups/15704/issues?state=opened&per_page=100" \
+          -o issues.json
+
+      - name: Commit issues.json
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add issues.json
+
+          git diff --cached --quiet || (
+            git commit -m "update gitlab issues"
+            git push
+          )
