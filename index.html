@@ -4,732 +4,158 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Diplomarbeit Stunden Tracker · User & GitLab Log</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            user-select: none;
-        }
-
-        body {
-            margin: 0;
-            background: linear-gradient(145deg, #0b1120 0%, #111827 100%);
-            color: #f0f3fa;
-            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            background: rgba(31, 41, 55, 0.85);
-            backdrop-filter: blur(2px);
-            padding: 32px 28px;
-            border-radius: 2rem;
-            box-shadow: 0 25px 45px -12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
-            text-align: center;
-            width: 100%;
-            max-width: 480px;
-            transition: all 0.2s ease;
-            border: 1px solid #334155;
-        }
-
-        h1 {
-            font-size: 1.7rem;
-            font-weight: 600;
-            margin-top: 0;
-            margin-bottom: 1.5rem;
-            background: linear-gradient(135deg, #E0E7FF, #A5F3FC);
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-            letter-spacing: -0.3px;
-        }
-
-        .user-panel {
-            background: #0f172a80;
-            border-radius: 1.5rem;
-            padding: 1rem 1rem 1.2rem;
-            margin-bottom: 1.8rem;
-            border: 1px solid #334155;
-        }
-
-        .user-select-row {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        select {
-            flex: 2;
-            background: #1e293b;
-            border: 1px solid #475569;
-            color: white;
-            padding: 12px 16px;
-            border-radius: 60px;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            outline: none;
-            transition: 0.2s;
-        }
-
-        select:focus {
-            border-color: #60a5fa;
-            box-shadow: 0 0 0 2px #3b82f640;
-        }
-
-        .btn-secondary {
-            background: #2d3a4e;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 60px;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.15s;
-            font-size: 0.9rem;
-        }
-
-        .btn-secondary:hover {
-            background: #3b4a62;
-            transform: scale(0.97);
-        }
-
-        .create-area {
-            margin-top: 16px;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .create-area input {
-            flex: 2;
-            background: #0f172a;
-            border: 1px solid #3b4a62;
-            padding: 10px 14px;
-            border-radius: 60px;
-            color: white;
-            font-size: 0.9rem;
-            outline: none;
-        }
-
-        .create-area input::placeholder {
-            color: #8192ae;
-        }
-
-        .btn-create {
-            background: #0e7c5e;
-            box-shadow: 0 2px 5px #00000020;
-        }
-
-        .btn-create:hover {
-            background: #0f9b74;
-        }
-
-        .current-user-card {
-            background: #111827cc;
-            border-radius: 40px;
-            padding: 8px 12px;
-            margin: 20px 0 10px;
-            display: inline-block;
-            width: auto;
-            backdrop-filter: blur(4px);
-        }
-
-        #currentUser {
-            font-size: 1.4rem;
-            font-weight: 600;
-            margin: 0;
-            background: #ffffff10;
-            padding: 6px 18px;
-            border-radius: 40px;
-            display: inline-block;
-            letter-spacing: 0.3px;
-        }
-
-        .timer-btn {
-            width: 260px;
-            height: 100px;
-            border: none;
-            border-radius: 60px;
-            font-size: 2.2rem;
-            font-weight: 800;
-            cursor: pointer;
-            background: #10b981;
-            color: white;
-            margin: 20px auto;
-            transition: all 0.2s ease;
-            box-shadow: 0 12px 25px -8px rgba(0,0,0,0.4);
-            letter-spacing: 2px;
-        }
-
-        .timer-btn:active {
-            transform: scale(0.96);
-        }
-
-        #status {
-            font-size: 1.2rem;
-            font-weight: 500;
-            margin-top: 10px;
-            background: #00000030;
-            padding: 8px;
-            border-radius: 40px;
-            backdrop-filter: blur(2px);
-        }
-
-        .git-note {
-            font-size: 0.7rem;
-            margin-top: 28px;
-            color: #9ca3af;
-            border-top: 1px dashed #334155;
-            padding-top: 16px;
-        }
-
-        .error-msg {
-            color: #f97316;
-            font-size: 0.8rem;
-            margin-top: 6px;
-            min-height: 24px;
-        }
-
-        @media (max-width: 450px) {
-            .container {
-                padding: 24px 18px;
-            }
-            .timer-btn {
-                width: 220px;
-                height: 85px;
-                font-size: 1.8rem;
-            }
-        }
-        
-        .state-badge {
-            display: inline-block;
-            background: #10b98120;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            margin-top: 6px;
-            color: #86efac;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div class="container">
-    <h1>📋 Diplomarbeit · Stunden Tracker</h1>
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="header-controls">
+            <button class="theme-toggle" id="themeToggle" title="Dark/Light umschalten">
+                <span id="themeIcon">🌙</span>
+            </button>
+            <select id="languageSelect" class="language-select">
+                <option value="de">🇩🇪 Deutsch</option>
+                <option value="en">🇬🇧 English</option>
+            </select>
+        </div>
+    </div>
 
+    <h1 id="pageTitle">📋 Diplomarbeit · Stunden Tracker</h1>
+
+    <!-- Profile Selection -->
     <div class="user-panel">
         <div class="user-select-row">
             <select id="userSelect">
-                <option value="">-- Benutzer auswählen --</option>
+                <option value="">-- Profil auswählen --</option>
             </select>
             <button class="btn-secondary" id="refreshUsersBtn">⟳ Aktualisieren</button>
-        </div>
-        <div class="create-area">
-            <input type="text" id="newUserName" placeholder="Neuer Benutzername" autocomplete="off">
-            <button class="btn-secondary btn-create" id="createUserBtn">➕ Neu anlegen</button>
         </div>
         <div class="error-msg" id="userErrorMsg"></div>
     </div>
 
-    <div class="current-user-card">
+    <!-- Current User Display -->
+    <div class="current-user-card" id="currentUserCard" style="display: none;">
         <h2 id="currentUser">👤 Kein User gewählt</h2>
     </div>
 
-    <button class="timer-btn" id="toggleButton">
-        ⏵ START
-    </button>
-    <p id="status">⚫ Nicht aktiv</p>
-    <div id="lastActionInfo" class="state-badge">⏳ Lade letzte Aktion...</div>
+    <!-- Developer Controls -->
+    <div id="developerControls" style="display: none;">
+        <div class="action-buttons">
+            <button class="btn-primary" id="startStopBtn">▶ START</button>
+            <button class="btn-secondary" id="viewProgressBtn">📊 Fortschritt ansehen</button>
+        </div>
+        <div id="timerStatus" class="status-badge">⚫ Nicht aktiv</div>
+        <div id="lastActionInfo" class="state-badge">⏳ Lade letzte Aktion...</div>
+    </div>
+
+    <!-- Supervisor Controls -->
+    <div id="supervisorControls" style="display: none;">
+        <div class="supervisor-select-row">
+            <select id="supervisorUserSelect">
+                <option value="">-- Entwickler auswählen --</option>
+            </select>
+            <button class="btn-secondary" id="viewSupervisorProgressBtn">📊 Fortschritt ansehen</button>
+        </div>
+        <div class="hint-text">👁️ Als Supervisor kannst du die Fortschritte der Entwickler einsehen</div>
+    </div>
+
+    <!-- Profile Creation -->
+    <div id="profileCreation" class="profile-creation">
+        <div class="creation-header"><span>➕ Neues Profil erstellen</span></div>
+        <div class="create-area">
+            <input type="text" id="newUserFirstname" placeholder="Vorname" autocomplete="off">
+            <input type="text" id="newUserSurname" placeholder="Nachname" autocomplete="off">
+            <select id="newUserRole">
+                <option value="developer">Developer</option>
+                <option value="supervisor">Supervisor</option>
+            </select>
+            <button class="btn-secondary btn-create" id="createUserBtn">➕ Anlegen</button>
+        </div>
+        <div class="error-msg" id="createErrorMsg"></div>
+    </div>
+    <!-- Task Popup - Clean Design -->
+    <div id="taskPopupOverlay" class="popup-overlay" style="display: none;">
+        <div class="popup-content">
+            <div class="popup-header">
+                <h2 id="popupTitle">▶ Task starten</h2>
+                <button class="popup-close" id="popupCloseBtn">✕</button>
+            </div>
+            <div class="popup-body">
+                <!-- Task Selection -->
+                <div class="popup-field">
+                    <label for="popupTaskSelect">Task</label>
+                    <div class="popup-task-row">
+                        <select id="popupTaskSelect">
+                            <option value="">-- Letzten Task fortsetzen --</option>
+                        </select>
+                        <button class="btn-icon btn-icon-primary" id="popupCreateTaskBtn" title="Neuen Task erstellen">➕</button>
+                    </div>
+                    <div class="field-hint">💡 Leer lassen = zuletzt verwendeten Task fortsetzen</div>
+                </div>
+
+                <!-- Status -->
+                <div class="popup-field">
+                    <label for="popupTaskState">Status</label>
+                    <input type="text" id="popupTaskState" placeholder="z.B. in_progress, testing, review" autocomplete="off">
+                    <div class="field-hint">💡 Leer lassen = gleichen Status wie zuvor</div>
+                </div>
+
+                <!-- Description -->
+                <div class="popup-field">
+                    <label for="popupDescription">Notiz</label>
+                    <input type="text" id="popupDescription" placeholder="Was machst du gerade? (optional)" autocomplete="off">
+                </div>
+
+                <div class="popup-actions">
+                    <button class="btn-primary popup-confirm" id="popupConfirmBtn">▶ Starten</button>
+                    <button class="btn-secondary popup-cancel" id="popupCancelBtn">Abbrechen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Task Popup (Side Panel) -->
+    <div id="newTaskPopupOverlay" class="popup-overlay" style="display: none;">
+        <div class="popup-content popup-side">
+            <div class="popup-header">
+                <h2>➕ Neuen Task erstellen</h2>
+                <button class="popup-close" id="newTaskPopupCloseBtn">✕</button>
+            </div>
+            <div class="popup-body">
+                <div class="popup-field">
+                    <label for="newTaskNameInput">Task-Name *</label>
+                    <input type="text" id="newTaskNameInput" placeholder="z.B. API Entwicklung" autocomplete="off">
+                </div>
+                <div class="popup-field">
+                    <label for="newTaskDescInput">Beschreibung</label>
+                    <input type="text" id="newTaskDescInput" placeholder="Kurze Beschreibung (optional)" autocomplete="off">
+                </div>
+                <div class="popup-field">
+                    <label for="newTaskDoDInput">Definition of Done</label>
+                    <input type="text" id="newTaskDoDInput" placeholder="Wann ist der Task fertig? (optional)" autocomplete="off">
+                </div>
+                <div class="popup-actions">
+                    <button class="btn-primary" id="newTaskConfirmBtn">✅ Erstellen</button>
+                    <button class="btn-secondary" id="newTaskCancelBtn">Abbrechen</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="git-note">
-        ✅ Jede Start/Stop Aktion wird in GitLab (times.csv) gespeichert.<br>
-        📅 Zeitformat: DD.MM.YYYY HH:MM:SS (europäisch)<br>
+        ✅ Alle Aktionen werden in GitLab gespeichert.<br>
+        📅 Zeitformat: Lokal & UTC (Greenwich)<br>
         <span style="font-size:0.65rem;">📌 GitLab Token & Projekt-ID werden in config.js definiert</span>
     </div>
 </div>
 
+<!-- Scripts - Notice the new modular structure -->
 <script src="config.js"></script>
-<script>
-    // ======================= GLOBALE VARIABLEN =======================
-    let currentUser = null;
-    let isRunning = false;          // UI-state: ob aus Sicht der App der Timer läuft
-    let usersList = [];
-    
-    // DOM elements
-    const userSelect = document.getElementById('userSelect');
-    const currentUserSpan = document.getElementById('currentUser');
-    const toggleBtn = document.getElementById('toggleButton');
-    const statusP = document.getElementById('status');
-    const newUserNameInput = document.getElementById('newUserName');
-    const userErrorMsg = document.getElementById('userErrorMsg');
-    const refreshBtn = document.getElementById('refreshUsersBtn');
-    const lastActionInfo = document.getElementById('lastActionInfo');
-    
-    // ----- Hilfsfunktionen für Zeitstempel -----
-    function getEuropeanTimestamp() {
-        const now = new Date();
-        const day = String(now.getDate()).padStart(2, '0');
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const year = now.getFullYear();
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        const seconds = String(now.getSeconds()).padStart(2, '0');
-        return `${day}.${month}.${year} ${hours}:${minutes}:${seconds}`;
-    }
-    
-    function getISOForStorage() {
-        return new Date().toISOString();
-    }
-    
-    // ----- GitLab API Hilfsfunktionen (basierend auf config.js) -----
-    const PROJECT_ID_ENC = encodeURIComponent(CONFIG.PROJECT_ID);
-    const USERS_CSV_PATH = "users.csv";
-    const BASE_URL = `${CONFIG.GITLAB_URL}/api/v4/projects/${PROJECT_ID_ENC}/repository/files`;
-    
-    async function fetchGitLabFileContent(filePath) {
-        const fileEnc = encodeURIComponent(filePath);
-        const url = `${BASE_URL}/${fileEnc}/raw?ref=${CONFIG.BRANCH}`;
-        try {
-            const resp = await fetch(url, {
-                headers: { "PRIVATE-TOKEN": CONFIG.GITLAB_TOKEN }
-            });
-            if (resp.status === 404) return null;
-            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-            return await resp.text();
-        } catch (err) {
-            console.warn(`fetch ${filePath} failed:`, err);
-            return null;
-        }
-    }
-    
-    async function updateGitLabFile(filePath, content, commitMsg) {
-        const fileEnc = encodeURIComponent(filePath);
-        const url = `${BASE_URL}/${fileEnc}`;
-        const payload = {
-            branch: CONFIG.BRANCH,
-            content: content,
-            commit_message: commitMsg,
-            encoding: "text"
-        };
-        try {
-            const resp = await fetch(url, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    "PRIVATE-TOKEN": CONFIG.GITLAB_TOKEN
-                },
-                body: JSON.stringify(payload)
-            });
-            if (!resp.ok) {
-                const errText = await resp.text();
-                throw new Error(`GitLab PUT error ${resp.status}: ${errText}`);
-            }
-            return true;
-        } catch (err) {
-            console.error(`Fehler beim Schreiben von ${filePath}:`, err);
-            throw err;
-        }
-    }
-    
-    // ------ USER MANAGEMENT ------
-    async function loadUsersFromGitLab() {
-        try {
-            const rawContent = await fetchGitLabFileContent(USERS_CSV_PATH);
-            if (!rawContent || rawContent.trim() === "") {
-                return [];
-            }
-            const lines = rawContent.split(/\r?\n/).filter(l => l.trim().length > 0);
-            const uniqueUsers = [...new Set(lines.map(l => l.trim()))];
-            return uniqueUsers;
-        } catch (err) {
-            console.warn("Fehler beim laden der Benutzer aus GitLab", err);
-            return [];
-        }
-    }
-    
-    async function saveUsersToGitLab(usersArray) {
-        const csvContent = usersArray.map(u => u.trim()).filter(u => u).join("\n");
-        await updateGitLabFile(USERS_CSV_PATH, csvContent, "Update user list");
-    }
-    
-    function populateUserSelect(users) {
-        const selectedVal = userSelect.value;
-        userSelect.innerHTML = '<option value="">-- Benutzer auswählen --</option>';
-        users.forEach(user => {
-            const option = document.createElement('option');
-            option.value = user;
-            option.textContent = user;
-            userSelect.appendChild(option);
-        });
-        if (selectedVal && users.includes(selectedVal)) {
-            userSelect.value = selectedVal;
-        } else if (currentUser && users.includes(currentUser)) {
-            userSelect.value = currentUser;
-        } else {
-            userSelect.value = "";
-        }
-    }
-    
-    async function refreshUserList() {
-        userErrorMsg.innerText = "🔄 Lade Benutzer ...";
-        try {
-            const freshUsers = await loadUsersFromGitLab();
-            usersList = freshUsers;
-            populateUserSelect(usersList);
-            if (currentUser && !usersList.includes(currentUser)) {
-                currentUser = null;
-                currentUserSpan.innerText = "👤 Kein User gewählt";
-                if (isRunning) {
-                    isRunning = false;
-                    updateUI();
-                }
-                lastActionInfo.innerText = "⏳ Kein Benutzer ausgewählt";
-            }
-            if (currentUser && usersList.includes(currentUser)) {
-                currentUserSpan.innerText = `👤 ${currentUser}`;
-                if (userSelect.value !== currentUser) userSelect.value = currentUser;
-                // Nachdem Benutzer geladen: prüfe letzten Status (start/stop) aus times.csv
-                await syncTimerStateFromLastEntry(currentUser);
-            } else if (!currentUser && userSelect.value) {
-                // falls aktueller User nicht gesetzt aber select wert hat
-                const selected = userSelect.value;
-                if (selected && usersList.includes(selected)) {
-                    currentUser = selected;
-                    currentUserSpan.innerText = `👤 ${currentUser}`;
-                    await syncTimerStateFromLastEntry(currentUser);
-                }
-            } else {
-                currentUserSpan.innerText = "👤 Kein User gewählt";
-                lastActionInfo.innerText = "👤 Bitte Benutzer wählen";
-            }
-            userErrorMsg.innerText = "";
-        } catch (err) {
-            userErrorMsg.innerText = "⚠️ Fehler beim Laden der Benutzerliste";
-            console.error(err);
-        }
-    }
-    
-    // ----- KERNLOGIK: letzte Aktion des Users aus times.csv auslesen -----
-    // Prüft, ob der letzte Eintrag des aktuellen Users "start" oder "stop" war.
-    // Dementsprechend wird isRunning gesetzt, um doppelte Starts/Stops zu vermeiden.
-    // Diese Funktion stellt sicher, dass nach Seiten-Reload der korrekte Timer-Zustand wiederhergestellt wird.
-    async function fetchLastUserActionFromCSV(user) {
-        if (!user) return null;
-        const filePath = CONFIG.FILE_PATH;
-        const fileEnc = encodeURIComponent(filePath);
-        const rawUrl = `${BASE_URL}/${fileEnc}/raw?ref=${CONFIG.BRANCH}`;
-        try {
-            const resp = await fetch(rawUrl, {
-                headers: { "PRIVATE-TOKEN": CONFIG.GITLAB_TOKEN }
-            });
-            if (!resp.ok) {
-                if (resp.status === 404) return null; // Datei existiert noch nicht -> keine Aktion
-                throw new Error(`HTTP ${resp.status}`);
-            }
-            const content = await resp.text();
-            if (!content.trim()) return null;
-            
-            // CSV Zeilen parsen: Format: user,action,timestamp_eu,iso
-            const lines = content.split(/\r?\n/).filter(l => l.trim().length > 0);
-            // Rückwärts durchlaufen, um letzten Eintrag des spezifischen Users zu finden
-            for (let i = lines.length - 1; i >= 0; i--) {
-                const parts = lines[i].split(',');
-                if (parts.length >= 2) {
-                    const csvUser = parts[0].trim();
-                    const action = parts[1].trim().toLowerCase();
-                    if (csvUser === user && (action === 'start' || action === 'stop')) {
-                        return action; // 'start' oder 'stop'
-                    }
-                }
-            }
-            return null;
-        } catch (err) {
-            console.warn("Fehler beim Lesen der times.csv für Zustandssynchronisation:", err);
-            return null;
-        }
-    }
-    
-    // Synchronisiert den lokalen isRunning-State mit der letzten bekannten Aktion des Users
-    async function syncTimerStateFromLastEntry(user) {
-        if (!user) {
-            // falls kein user, setze isRunning = false, UI default
-            isRunning = false;
-            updateUI();
-            lastActionInfo.innerText = "⏳ Kein Benutzer";
-            return;
-        }
-        
-        try {
-            const lastAction = await fetchLastUserActionFromCSV(user);
-            if (lastAction === 'start') {
-                // Der letzte Eintrag war ein Start -> Timer sollte als laufend markiert sein
-                if (!isRunning) {
-                    isRunning = true;
-                    updateUI();
-                    lastActionInfo.innerHTML = `⏵ Letzte Aktion: <strong>START</strong> (Timer läuft)`;
-                    statusP.innerText = "🔴 Timer läuft (aktiv)";
-                } else {
-                    lastActionInfo.innerHTML = `⏵ Zustand: Timer läuft (letzte Aktion: START)`;
-                }
-            } 
-            else if (lastAction === 'stop') {
-                // Letzter Eintrag war Stop -> Timer sollte gestoppt sein
-                if (isRunning) {
-                    isRunning = false;
-                    updateUI();
-                    lastActionInfo.innerHTML = `⏹ Letzte Aktion: <strong>STOP</strong> (Timer inaktiv)`;
-                    statusP.innerText = "⚫ Nicht aktiv";
-                } else {
-                    lastActionInfo.innerHTML = `⏹ Zustand: Timer gestoppt (letzte Aktion: STOP)`;
-                }
-            }
-            else {
-                // Kein Eintrag -> Timer ist gestoppt, setze isRunning false
-                if (isRunning) {
-                    isRunning = false;
-                    updateUI();
-                }
-                lastActionInfo.innerHTML = `📭 Keine vorherige Aktion – Timer ist gestoppt`;
-                statusP.innerText = "⚫ Nicht aktiv";
-            }
-            
-            // Zusätzliche Absicherung: Zeige Info, dass Zustand konsistent ist
-            if (lastAction === null) {
-                lastActionInfo.innerHTML = `🕒 Kein vorheriger Eintrag – du kannst STARTEN`;
-            }
-        } catch (err) {
-            console.error("Fehler bei Sync:", err);
-            lastActionInfo.innerText = "⚠️ Konnte letzten Status nicht prüfen";
-            // Sicherheitshalber setzen wir isRunning = false, um inkonsistente Zustände zu vermeiden
-            isRunning = false;
-            updateUI();
-        }
-    }
-    
-    // Neue Benutzer anlegen
-    async function createNewUser(username) {
-        if (!username || username.trim() === "") {
-            userErrorMsg.innerText = "❌ Bitte gültigen Namen eingeben";
-            return false;
-        }
-        const cleanName = username.trim();
-        if (usersList.includes(cleanName)) {
-            userErrorMsg.innerText = `❗ Benutzer "${cleanName}" existiert bereits.`;
-            return false;
-        }
-        userErrorMsg.innerText = "➕ Erstelle Benutzer ...";
-        try {
-            const newList = [...usersList, cleanName];
-            await saveUsersToGitLab(newList);
-            usersList = newList;
-            populateUserSelect(usersList);
-            userSelect.value = cleanName;
-            await selectUserByName(cleanName);
-            userErrorMsg.innerText = `✅ Benutzer "${cleanName}" angelegt.`;
-            return true;
-        } catch (err) {
-            userErrorMsg.innerText = `❌ Fehler beim Speichern in GitLab: ${err.message}`;
-            return false;
-        }
-    }
-    
-    async function selectUserByName(user) {
-        if (!user) return;
-        currentUser = user;
-        currentUserSpan.innerText = `👤 ${currentUser}`;
-        userSelect.value = currentUser;
-        userErrorMsg.innerText = "";
-        // WICHTIG: Jedes Mal wenn ein Benutzer gewählt wird, synchronisiere den Timer-Zustand aus der CSV
-        await syncTimerStateFromLastEntry(currentUser);
-    }
-    
-    // ----- Timer Toggle mit Prüfung gegen doppelte Starts/Stops (auch nach Reload) -----
-    async function toggleTimer() {
-        if (!currentUser) {
-            userErrorMsg.innerText = "⚠️ Bitte zuerst einen Benutzer auswählen.";
-            return;
-        }
-        userErrorMsg.innerText = "";
-        
-        // Vor dem Umschalten: Lade die letzte Aktion erneut aus der CSV (um Race Conditions zu vermeiden)
-        // Das ist entscheidend: prüfe direkt vor dem Speichern, ob der User bereits einen "start" oder "stop" ohne passendes Gegenstück hat.
-        const lastAction = await fetchLastUserActionFromCSV(currentUser);
-        
-        // Verhindere doppelten Start: wenn letzte Aktion = "start" und der Benutzer versucht zu starten (isRunning false / willStart true)
-        const willStart = !isRunning;
-        
-        if (willStart && lastAction === 'start') {
-            // Fall: Der letzte Eintrag war bereits ein Start ohne Stop -> Timer läuft eigentlich bereits im System
-            // Das deutet darauf hin, dass der lokale Zustand nicht korrekt war. Synchronisiere und weise den Benutzer hin.
-            userErrorMsg.innerText = "⛔ Fehler: Letzte Aktion war bereits START. Kein doppelter Start erlaubt. Zustand wurde synchronisiert.";
-            await syncTimerStateFromLastEntry(currentUser);
-            return;
-        }
-        
-        if (!willStart && lastAction === 'stop') {
-            // Doppelter Stop: verhindern
-            userErrorMsg.innerText = "⛔ Fehler: Letzte Aktion war bereits STOP. Timer ist bereits gestoppt. Kein doppelter Stop erlaubt.";
-            await syncTimerStateFromLastEntry(currentUser);
-            return;
-        }
-        
-        // Auch wenn isRunning gerade anders ist aber durch sync konsistent, verwende den erwarteten Zustand
-        // Jetzt sichere Aktion: Start wenn letzte Aktion nicht start ist, Stop wenn letzte Aktion nicht stop ist.
-        const action = willStart ? "start" : "stop";
-        
-        // Optimistisch UI updaten (oder auch nicht, aber wir machen nach erfolgreichem API-Call commit)
-        const previousRunning = isRunning;
-        // Temporär UI umschalten für Feedback, wird bei Fehler zurückgesetzt
-        isRunning = willStart;
-        updateUI();
-        
-        try {
-            await saveTimeEntryToCSV(currentUser, action);
-            // Erfolgreich gespeichert: lokaler Zustand bleibt wie gesetzt, zusätzlich letzte Aktion Info aktualisieren
-            if (action === "start") {
-                statusP.innerText = "⏵ Timer läuft · gestartet";
-                lastActionInfo.innerHTML = `✅ START erfasst · Timer läuft`;
-            } else {
-                statusP.innerText = "⏹ Gestoppt · gespeichert";
-                lastActionInfo.innerHTML = `✅ STOP erfasst · Timer inaktiv`;
-                setTimeout(() => {
-                    if (!isRunning) statusP.innerText = "⚫ Nicht aktiv";
-                }, 2000);
-            }
-            // Nach erfolgreichem Schreiben nochmal kurz die letzten Infos frisch halten (optional)
-            // Keine weitere Aktion nötig
-        } catch (err) {
-            // Bei Fehler: Zustand zurücksetzen
-            isRunning = previousRunning;
-            updateUI();
-            userErrorMsg.innerText = `❌ GitLab Fehler: ${err.message || "Netzwerk"}`;
-            console.error(err);
-            // Erneut letzte Aktion laden um korrekten Stand anzuzeigen
-            await syncTimerStateFromLastEntry(currentUser);
-        }
-    }
-    
-    // Speichern in times.csv (wie gehabt, aber wir nutzen die existierende Logik)
-    async function saveTimeEntryToCSV(user, action) {
-        const europeanTime = getEuropeanTimestamp();
-        const isoTime = getISOForStorage();
-        const newLine = `${user},${action},${europeanTime},${isoTime}`;
-        const filePath = CONFIG.FILE_PATH;
-        const fileEnc = encodeURIComponent(filePath);
-        const baseRawUrl = `${BASE_URL}/${fileEnc}/raw?ref=${CONFIG.BRANCH}`;
-        
-        let currentContent = "";
-        try {
-            const getResp = await fetch(baseRawUrl, {
-                headers: { "PRIVATE-TOKEN": CONFIG.GITLAB_TOKEN }
-            });
-            if (getResp.ok) {
-                currentContent = await getResp.text();
-            } else if (getResp.status !== 404) {
-                throw new Error(`Fehler beim Lesen: ${getResp.status}`);
-            }
-        } catch (err) {
-            console.warn("lesen der times.csv nicht möglich, erstelle neue", err);
-        }
-        
-        let updatedContent = "";
-        if (!currentContent.trim()) {
-            updatedContent = newLine;
-        } else {
-            // ensure newline separation
-            if (currentContent.endsWith("\n")) {
-                updatedContent = currentContent + newLine;
-            } else {
-                updatedContent = currentContent + "\n" + newLine;
-            }
-        }
-        
-        const putUrl = `${BASE_URL}/${fileEnc}`;
-        const putResp = await fetch(putUrl, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                "PRIVATE-TOKEN": CONFIG.GITLAB_TOKEN
-            },
-            body: JSON.stringify({
-                branch: CONFIG.BRANCH,
-                content: updatedContent,
-                commit_message: `Track ${user} ${action} at ${europeanTime}`
-            })
-        });
-        if (!putResp.ok) {
-            const errText = await putResp.text();
-            throw new Error(`GitLab update fehlgeschlagen: ${errText}`);
-        }
-        console.log(`✅ ${action} für ${user} gespeichert. (${europeanTime})`);
-    }
-    
-    function updateUI() {
-        if (isRunning) {
-            toggleBtn.innerHTML = "⏹ STOP";
-            toggleBtn.style.background = "#ef4444";
-            if (statusP.innerText !== "🔴 Timer läuft (aktiv)") statusP.innerHTML = "🔴 Timer läuft (aktiv)";
-        } else {
-            toggleBtn.innerHTML = "⏵ START";
-            toggleBtn.style.background = "#10b981";
-            if (statusP.innerText !== "⚫ Nicht aktiv") statusP.innerHTML = "⚫ Nicht aktiv";
-        }
-    }
-    
-    // ----- INIT & EVENT LISTENER -----
-    async function init() {
-        if (!CONFIG.GITLAB_URL) {
-            userErrorMsg.innerText = "⚠️ config.js muss GITLAB_URL enthalten!";
-            console.error("Fehlende GITLAB_URL in config.js");
-            return;
-        }
-        if (!CONFIG.GITLAB_TOKEN || CONFIG.GITLAB_TOKEN === "DEIN_TOKEN") {
-            userErrorMsg.innerText = "⚠️ Bitte config.js mit gültigem GitLab Token versehen!";
-        } else {
-            await refreshUserList();
-        }
-        
-        userSelect.addEventListener('change', async (e) => {
-            const selected = e.target.value;
-            if (selected) {
-                await selectUserByName(selected);
-            } else {
-                currentUser = null;
-                currentUserSpan.innerText = "👤 Kein User gewählt";
-                userErrorMsg.innerText = "";
-                isRunning = false;
-                updateUI();
-                lastActionInfo.innerText = "👤 Kein Benutzer ausgewählt";
-            }
-        });
-        
-        document.getElementById('createUserBtn').addEventListener('click', async () => {
-            const newName = newUserNameInput.value.trim();
-            if (!newName) {
-                userErrorMsg.innerText = "Bitte Namen eingeben";
-                return;
-            }
-            await createNewUser(newName);
-            newUserNameInput.value = "";
-        });
-        
-        refreshBtn.addEventListener('click', async () => {
-            await refreshUserList();
-            userErrorMsg.innerText = "✅ Benutzerliste & Timer-Zustand aktualisiert";
-            setTimeout(() => { if(userErrorMsg.innerText === "✅ Benutzerliste & Timer-Zustand aktualisiert") userErrorMsg.innerText = ""; }, 2500);
-        });
-        
-        toggleBtn.addEventListener('click', toggleTimer);
-    }
-    
-    init().catch(e => console.error("Init Fehler", e));
-</script>
+<script src="js/translations.js"></script>
+<script src="js/time-utils.js"></script>
+<script src="js/models.js"></script>
+<script src="js/data-manager.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>

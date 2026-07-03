@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Zeitkalender · Stunden Tracker</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="calendar.css">
+</head>
+<body>
+
+<div class="calendar-container">
+    <!-- Top Bar -->
+    <div class="calendar-top-bar">
+        <div class="calendar-header-controls">
+            <button class="btn-icon" id="backBtn" title="Zurück zur Startseite">←</button>
+            <h1 id="calendarTitle">📅 Zeitkalender</h1>
+            <div class="header-right">
+                <button class="theme-toggle" id="themeToggle" title="Dark/Light umschalten">
+                    <span id="themeIcon">🌙</span>
+                </button>
+                <select id="languageSelect" class="language-select">
+                    <option value="de">🇩🇪 Deutsch</option>
+                    <option value="en">🇬🇧 English</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Calendar Layout -->
+    <div class="calendar-main-layout">
+        <!-- Left Panel: Calendar -->
+        <div class="calendar-panel">
+            <!-- Member Selection (only for supervisors) -->
+            <div class="member-selector" id="memberSelector" style="display: none;">
+                <div class="member-selector-header">
+                    <span id="memberSelectorLabel">👥 Zum Vergleich hinzufügen</span>
+                </div>
+                <div class="member-selector-options" id="memberSelectorOptions">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <div class="calendar-nav">
+                <button class="nav-btn" id="firstMonthBtn" title="Zum ersten Eintrag">«</button>
+                <button class="nav-btn" id="prevMonthBtn" title="Vorheriger Monat">‹</button>
+                <span class="nav-month" id="currentMonthDisplay">Januar 2026</span>
+                <button class="nav-btn" id="nextMonthBtn" title="Nächster Monat">›</button>
+                <button class="nav-btn" id="lastMonthBtn" title="Zum letzten Eintrag">»</button>
+            </div>
+
+            <!-- Month Total -->
+            <div class="month-total" id="monthTotal">
+                📊 Monat: 0h 0m
+            </div>
+
+            <!-- Calendar Grid -->
+            <div class="calendar-grid">
+                <div class="calendar-weekdays" id="weekdayLabels">
+                    <span>Mo</span><span>Di</span><span>Mi</span>
+                    <span>Do</span><span>Fr</span><span>Sa</span><span>So</span>
+                </div>
+                <div class="calendar-days" id="calendarDays">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Details -->
+        <div class="details-panel">
+            <div class="total-time-box" id="totalTimeBox">
+                <div class="total-time-label">⏱️ Gesamtzeit</div>
+                <div class="total-time-value" id="totalTimeValue">0h 0m</div>
+            </div>
+
+            <div class="day-details" id="dayDetails">
+                <div class="day-details-header">
+                    <span id="dayDetailsTitle">📅 Tag auswählen</span>
+                </div>
+                <div class="day-details-content" id="dayDetailsContent">
+                    <p style="color: var(--text-muted); text-align: center; padding: 20px;">
+                        Klicke auf einen Tag im Kalender<br>um Details zu sehen
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="../config.js"></script>
+<script src="../js/translations.js"></script>
+<script src="../js/time-utils.js"></script>
+<script src="../js/models.js"></script>
+<script src="../js/data-manager.js"></script>
+<script src="calendar.js"></script>
+</body>
+</html>
