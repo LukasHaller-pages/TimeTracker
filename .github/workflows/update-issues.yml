@@ -1,0 +1,35 @@
+name: Sync GitLab Group Issues
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+            
+      - uses: actions/checkout@v4
+      
+            
+      - name: Fetch GitLab Group Issues
+        run: |
+              curl --header "PRIVATE-TOKEN: ${{ secrets.GITLAB_TOKEN }}" \"https://git.htl-klu.at/api/v4/groups/15704/issues?state=opened&per_page=100" \-o issues.json
+      
+            
+      - name: Commit changes
+        run: |
+              git config user.name "github-actions"
+              git config user.email "github-actions@github.com"
+      
+                git add issues.json
+      
+                git diff --cached --quiet || (
+                  git commit -m "Update GitLab group issues"
+                  git push
+                )
