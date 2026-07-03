@@ -1,161 +1,80 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Diplomarbeit Stunden Tracker · User & GitLab Log</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <title>GitLab Issues Test</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+    }
+
+    .issue {
+      border: 1px solid #ddd;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+    }
+
+    .title {
+      font-weight: bold;
+      font-size: 18px;
+    }
+
+    .meta {
+      font-size: 12px;
+      color: gray;
+    }
+  </style>
 </head>
+
 <body>
 
-<div class="container">
-    <!-- Top Bar -->
-    <div class="top-bar">
-        <div class="header-controls">
-            <button class="theme-toggle" id="themeToggle" title="Dark/Light umschalten">
-                <span id="themeIcon">🌙</span>
-            </button>
-            <select id="languageSelect" class="language-select">
-                <option value="de">🇩🇪 Deutsch</option>
-                <option value="en">🇬🇧 English</option>
-            </select>
+<h1>GitLab Issues Test</h1>
+<p id="status">Lade Issues...</p>
+
+<div id="issues"></div>
+
+<script>
+const API_URL = "https://git.htl-klu.at/api/v4/groups/15704/issues?state=opened";
+
+fetch(API_URL)
+  .then(res => {
+    if (!res.ok) {
+      throw new Error("HTTP Error " + res.status);
+    }
+    return res.json();
+  })
+  .then(data => {
+    document.getElementById("status").innerText =
+      "Gefundene Issues: " + data.length;
+
+    const container = document.getElementById("issues");
+
+    data.forEach(issue => {
+      const div = document.createElement("div");
+      div.className = "issue";
+
+      div.innerHTML = `
+        <div class="title">${issue.title}</div>
+        <div class="meta">
+          Projekt: ${issue.references?.full || "unknown"}<br>
+          Status: ${issue.state}<br>
+          <a href="${issue.web_url}" target="_blank">Open in GitLab</a>
         </div>
-    </div>
+      `;
 
-    <h1 id="pageTitle">📋 Diplomarbeit · Stunden Tracker</h1>
+      container.appendChild(div);
+    });
+  })
+  .catch(err => {
+    document.getElementById("status").innerText =
+      "Fehler beim Laden: " + err.message;
 
-    <!-- Profile Selection -->
-    <div class="user-panel">
-        <div class="user-select-row">
-            <select id="userSelect">
-                <option value="">-- Profil auswählen --</option>
-            </select>
-            <button class="btn-secondary" id="refreshUsersBtn">⟳ Aktualisieren</button>
-        </div>
-        <div class="error-msg" id="userErrorMsg"></div>
-    </div>
+    console.error(err);
+  });
+</script>
 
-    <!-- Current User Display -->
-    <div class="current-user-card" id="currentUserCard" style="display: none;">
-        <h2 id="currentUser">👤 Kein User gewählt</h2>
-    </div>
-
-    <!-- Developer Controls -->
-    <div id="developerControls" style="display: none;">
-        <div class="action-buttons">
-            <button class="btn-primary" id="startStopBtn">▶ START</button>
-            <button class="btn-secondary" id="viewProgressBtn">📊 Fortschritt ansehen</button>
-        </div>
-        <div id="timerStatus" class="status-badge">⚫ Nicht aktiv</div>
-        <div id="lastActionInfo" class="state-badge">⏳ Lade letzte Aktion...</div>
-    </div>
-
-    <!-- Supervisor Controls -->
-    <div id="supervisorControls" style="display: none;">
-        <div class="supervisor-select-row">
-            <select id="supervisorUserSelect">
-                <option value="">-- Entwickler auswählen --</option>
-            </select>
-            <button class="btn-secondary" id="viewSupervisorProgressBtn">📊 Fortschritt ansehen</button>
-        </div>
-        <div class="hint-text">👁️ Als Supervisor kannst du die Fortschritte der Entwickler einsehen</div>
-    </div>
-
-    <!-- Profile Creation -->
-    <div id="profileCreation" class="profile-creation">
-        <div class="creation-header"><span>➕ Neues Profil erstellen</span></div>
-        <div class="create-area">
-            <input type="text" id="newUserFirstname" placeholder="Vorname" autocomplete="off">
-            <input type="text" id="newUserSurname" placeholder="Nachname" autocomplete="off">
-            <select id="newUserRole">
-                <option value="developer">Developer</option>
-                <option value="supervisor">Supervisor</option>
-            </select>
-            <button class="btn-secondary btn-create" id="createUserBtn">➕ Anlegen</button>
-        </div>
-        <div class="error-msg" id="createErrorMsg"></div>
-    </div>
-    <!-- Task Popup - Clean Design -->
-    <div id="taskPopupOverlay" class="popup-overlay" style="display: none;">
-        <div class="popup-content">
-            <div class="popup-header">
-                <h2 id="popupTitle">▶ Task starten</h2>
-                <button class="popup-close" id="popupCloseBtn">✕</button>
-            </div>
-            <div class="popup-body">
-                <!-- Task Selection -->
-                <div class="popup-field">
-                    <label for="popupTaskSelect">Task</label>
-                    <div class="popup-task-row">
-                        <select id="popupTaskSelect">
-                            <option value="">-- Letzten Task fortsetzen --</option>
-                        </select>
-                        <button class="btn-icon btn-icon-primary" id="popupCreateTaskBtn" title="Neuen Task erstellen">➕</button>
-                    </div>
-                    <div class="field-hint">💡 Leer lassen = zuletzt verwendeten Task fortsetzen</div>
-                </div>
-
-                <!-- Status -->
-                <div class="popup-field">
-                    <label for="popupTaskState">Status</label>
-                    <input type="text" id="popupTaskState" placeholder="z.B. in_progress, testing, review" autocomplete="off">
-                    <div class="field-hint">💡 Leer lassen = gleichen Status wie zuvor</div>
-                </div>
-
-                <!-- Description -->
-                <div class="popup-field">
-                    <label for="popupDescription">Notiz</label>
-                    <input type="text" id="popupDescription" placeholder="Was machst du gerade? (optional)" autocomplete="off">
-                </div>
-
-                <div class="popup-actions">
-                    <button class="btn-primary popup-confirm" id="popupConfirmBtn">▶ Starten</button>
-                    <button class="btn-secondary popup-cancel" id="popupCancelBtn">Abbrechen</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- New Task Popup (Side Panel) -->
-    <div id="newTaskPopupOverlay" class="popup-overlay" style="display: none;">
-        <div class="popup-content popup-side">
-            <div class="popup-header">
-                <h2>➕ Neuen Task erstellen</h2>
-                <button class="popup-close" id="newTaskPopupCloseBtn">✕</button>
-            </div>
-            <div class="popup-body">
-                <div class="popup-field">
-                    <label for="newTaskNameInput">Task-Name *</label>
-                    <input type="text" id="newTaskNameInput" placeholder="z.B. API Entwicklung" autocomplete="off">
-                </div>
-                <div class="popup-field">
-                    <label for="newTaskDescInput">Beschreibung</label>
-                    <input type="text" id="newTaskDescInput" placeholder="Kurze Beschreibung (optional)" autocomplete="off">
-                </div>
-                <div class="popup-field">
-                    <label for="newTaskDoDInput">Definition of Done</label>
-                    <input type="text" id="newTaskDoDInput" placeholder="Wann ist der Task fertig? (optional)" autocomplete="off">
-                </div>
-                <div class="popup-actions">
-                    <button class="btn-primary" id="newTaskConfirmBtn">✅ Erstellen</button>
-                    <button class="btn-secondary" id="newTaskCancelBtn">Abbrechen</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="git-note">
-        ✅ Alle Aktionen werden in GitLab gespeichert.<br>
-        📅 Zeitformat: Lokal & UTC (Greenwich)<br>
-        <span style="font-size:0.65rem;">📌 GitLab Token & Projekt-ID werden in config.js definiert</span>
-    </div>
-</div>
-
-<!-- Scripts - Notice the new modular structure -->
-<script src="config.js"></script>
-<script src="js/translations.js"></script>
-<script src="js/time-utils.js"></script>
-<script src="js/models.js"></script>
-<script src="js/data-manager.js"></script>
-<script src="js/app.js"></script>
 </body>
 </html>
