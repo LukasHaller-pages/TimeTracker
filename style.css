@@ -763,4 +763,23 @@ select option {
             width: 100%;
         }
     }
+    /* In style.css */
+    .btn-icon-update {
+        background: #7c3aed;
+        border-color: #7c3aed;
+        color: white;
+    }
+
+    .btn-icon-update:hover {
+        background: #6d28d9;
+        border-color: #6d28d9;
+        color: white;
+        transform: scale(1.02);
+    }
+
+    .btn-icon-update:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none !important;
+    }
 }

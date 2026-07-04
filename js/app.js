@@ -732,6 +732,40 @@ newTaskNameInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') createNewTask();
 });
 
+// Update Issues Button
+popupUpdateIssuesBtn.addEventListener('click', async () => {
+    if (!currentUser) {
+        showMessage('selectProfileFirst', 'warning');
+        return;
+    }
+    
+    popupUpdateIssuesBtn.disabled = true;
+    popupUpdateIssuesBtn.textContent = '⏳';
+    showMessage('🔄 Syncronisiere Issues...', 'info');
+    
+    try {
+        // 1. Issues syncronisieren (issues.json → tasks.csv)
+        const result = await syncIssuesToTasks();
+        
+        // 2. Tasks neu laden
+        await loadTasks();
+        populateTaskSelect(tasksList);
+        
+        // 3. Popup Task Liste aktualisieren
+        if (popupTaskSelect) {
+            populateTaskSelect(tasksList);
+        }
+        
+        showMessage(`✅ ${result.added} neue Tasks, ${result.updated} aktualisiert`, 'success');
+    } catch (err) {
+        showMessage(`❌ Fehler: ${err.message}`, 'error');
+        console.error(err);
+    } finally {
+        popupUpdateIssuesBtn.disabled = false;
+        popupUpdateIssuesBtn.textContent = '🔄';
+    }
+});
+
 // ======================= INIT =======================
 
 async function init() {

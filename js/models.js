@@ -26,6 +26,15 @@ class Task {
         this.definitionOfDone = definitionOfDone || "---";
     }
 }
+class Task {
+    constructor(id, taskName, description, definitionOfDone) {
+        this.id = id;
+        this.taskName = taskName;
+        this.description = description || "---";
+        this.definitionOfDone = definitionOfDone || "---";
+        this.issueId = null; // Für GitLab Issue ID
+    }
+}
 
 class TrackingEntry {
     constructor(userId, action, taskId, taskState, description) {
