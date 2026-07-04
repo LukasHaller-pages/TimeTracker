@@ -21,18 +21,10 @@ class User {
 class Task {
     constructor(id, taskName, description, definitionOfDone) {
         this.id = id;
-        this.taskName = taskName;
+        this.taskName = taskName;  // ← Das ist der Titel!
         this.description = description || "---";
         this.definitionOfDone = definitionOfDone || "---";
-    }
-}
-class Task {
-    constructor(id, taskName, description, definitionOfDone) {
-        this.id = id;
-        this.taskName = taskName;
-        this.description = description || "---";
-        this.definitionOfDone = definitionOfDone || "---";
-        this.issueId = null; // Für GitLab Issue ID
+        this.issueId = null;
     }
 }
 

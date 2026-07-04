@@ -165,26 +165,40 @@ function populateSupervisorSelect(users) {
         supervisorUserSelect.appendChild(option);
     });
 }
-
 function populateTaskSelect(tasks) {
     const currentValue = popupTaskSelect.value;
+    
+    // Sortiere Tasks alphabetisch nach taskName (case-insensitive)
+    const sortedTasks = [...tasks].sort((a, b) => {
+        const nameA = a.taskName.toLowerCase();
+        const nameB = b.taskName.toLowerCase();
+        return nameA.localeCompare(nameB);
+    });
+    
     popupTaskSelect.innerHTML = `<option value="">-- Letzten Task fortsetzen --</option>`;
-    tasks.forEach(task => {
+    
+    sortedTasks.forEach(task => {
         const option = document.createElement('option');
         option.value = task.id;
-        option.textContent = task.taskName;
+        option.textContent = task.taskName;  // NUR der Name!
+        
+        // Tooltip mit Description (optional)
         if (task.description && task.description !== "---") {
-            option.title = task.description;
-        }
-        if (task.definitionOfDone && task.definitionOfDone !== "---") {
-            if (option.title) {
-                option.title += ` | Done: ${task.definitionOfDone}`;
-            } else {
-                option.title = `Done: ${task.definitionOfDone}`;
+            let tooltipText = task.description;
+            if (tooltipText.length > 100) {
+                tooltipText = tooltipText.substring(0, 100) + '...';
             }
+            option.title = tooltipText;
         }
+        
+        if (task.issueId) {
+            option.title += ` (Issue #${task.issueId})`;
+        }
+        
         popupTaskSelect.appendChild(option);
     });
+    
+    // Vorherigen Wert wiederherstellen
     if (currentValue && tasks.some(t => t.id == currentValue)) {
         popupTaskSelect.value = currentValue;
     }
