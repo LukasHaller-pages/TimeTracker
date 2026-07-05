@@ -8,7 +8,6 @@ const DATA_CONFIG = {
 
 // ======================= CSV HELPER =======================
 
-// Für CSV-Dateien MIT Kommas (users, tracking)
 function parseCSVLine(line) {
     const result = [];
     let current = '';
@@ -45,20 +44,6 @@ function serializeCSVRow(row) {
         }
         return str;
     }).join(',');
-}
-
-// Für Tasks mit Semikolon (weil sie Kommas in den Texten haben)
-function parseCSVLineSemicolon(line) {
-    return line.split(';').map(f => f.trim());
-}
-
-function serializeCSVRowSemicolon(row) {
-    return row.map(f => {
-        let str = String(f);
-        // Ersetze alle Kommas durch Semikolon für konsistente Darstellung
-        str = str.replace(/,/g, ';');
-        return str;
-    }).join(';');
 }
 
 // ======================= GITLAB API HELPER =======================
@@ -147,7 +132,18 @@ async function saveUsersToGitLab(users) {
     await updateGitLabFile(DATA_CONFIG.USERS_FILE, content, "Update users list");
 }
 
-// ======================= TASKS (mit Semikolon) =======================
+// ======================= TASKS =======================
+
+// HILFSFUNKTION: Entfernt alle , ; und " aus Texten
+function sanitizeForCSV(text) {
+    if (!text) return "---";
+    let cleaned = String(text);
+    // Ersetze alle Kommas, Semikolons und Anführungszeichen durch Leerzeichen
+    cleaned = cleaned.replace(/[,;"]/g, ' ');
+    // Entferne mehrfache Leerzeichen
+    cleaned = cleaned.replace(/\s+/g, ' ');
+    return cleaned.trim();
+}
 
 async function loadTasksFromGitLab() {
     try {
@@ -159,7 +155,7 @@ async function loadTasksFromGitLab() {
         const hasIssueId = lines[0].includes('issue_id');
         const tasks = [];
         for (let i = 1; i < lines.length; i++) {
-            const parts = parseCSVLineSemicolon(lines[i]);
+            const parts = lines[i].split(',').map(p => p.trim());
             if (parts.length >= 4) {
                 const task = new Task(
                     parseInt(parts[0]),
@@ -181,12 +177,16 @@ async function loadTasksFromGitLab() {
 }
 
 async function saveTasksToGitLab(tasks) {
-    const header = ['id', 'task_name', 'description', 'definition_of_done', 'issue_id'];
+    const header = 'id,task_name,description,definition_of_done,issue_id';
     const rows = tasks.map(t => {
         const issueId = t.issueId || '';
-        return [t.id, t.taskName, t.description, t.definitionOfDone, issueId];
+        // ALLE problematischen Zeichen entfernen!
+        const taskName = sanitizeForCSV(t.taskName);
+        const description = sanitizeForCSV(t.description);
+        const definitionOfDone = sanitizeForCSV(t.definitionOfDone);
+        return [t.id, taskName, description, definitionOfDone, issueId];
     });
-    const content = [header.join(';'), ...rows.map(row => serializeCSVRowSemicolon(row))].join('\n');
+    const content = [header, ...rows.map(row => row.join(','))].join('\n');
     await updateGitLabFile(DATA_CONFIG.TASKS_FILE, content, "Update tasks list");
 }
 
@@ -202,7 +202,7 @@ async function loadTrackingFromGitLab() {
         const startIdx = lines[0].includes('id,user_id,action') ? 1 : 0;
         const entries = [];
         for (let i = startIdx; i < lines.length; i++) {
-            const parts = parseCSVLine(lines[i]);
+            const parts = lines[i].split(',').map(p => p.trim());
             if (parts.length >= 11) {
                 const entry = new TrackingEntry(
                     parseInt(parts[1]),
@@ -285,12 +285,10 @@ async function getUserCurrentState(userId) {
 
 // ======================= ISSUES SYNC =======================
 
-// Lade issues.json (von GitHub Action erstellt)
 async function fetchIssuesJson() {
     try {
         const response = await fetch('issues.json');
         if (!response.ok) {
-            // Fallback: Von GitHub raw laden
             const fallbackResponse = await fetch('https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/issues.json');
             if (!fallbackResponse.ok) return null;
             return await fallbackResponse.json();
@@ -302,10 +300,8 @@ async function fetchIssuesJson() {
     }
 }
 
-// HAUPTFUNKTION: issues.json → tasks.csv (OHNE DUPLIKATE!)
 async function syncIssuesToTasks() {
     try {
-        // 1. Lade issues.json
         const issuesJson = await fetchIssuesJson();
         if (!issuesJson || issuesJson.length === 0) {
             throw new Error('Keine Issues in issues.json gefunden');
